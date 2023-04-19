@@ -25,6 +25,7 @@ jobs:
                   path: target/
     build-docker-image:
         name: build-docker
+        needs: setup-build-deploy
         runs-on: ubuntu-latest
         steps:
             - name: checkout
@@ -34,7 +35,7 @@ jobs:
               with:
                   name: Pharamacy-Data.jar
                   path: target/
-            - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+            - uses: GoogleCloudPlatform/github-actions/setup-gcloud
               with:
                   version: '275.0.0'
                   service_account_email: ${{ secrets.SA_EMAIL }}
