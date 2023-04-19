@@ -35,16 +35,16 @@ jobs:
               with:
                   name: Pharamacy-Data.jar
                   path: target/
-            - uses:  google-github-actions/setup-gcloud@v0
+            - id: 'auth'
+              uses: 'google-github-actions/auth@v1'
               with:
-                  version: '275.0.0'
-                  service_account_email: ${{ secrets.SA_EMAIL }}
-                  service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS}}
-                          
-                          # Configure gcloud CLI
-            - name: gcloud Set up
-              run: |
-                gcloud config set project $PROJECT_ID
+                credentials_json: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}'
+
+            - name: 'Set up Cloud SDK'
+              uses: 'google-github-actions/setup-gcloud@v1'
+
+            - name: 'Use gcloud CLI'
+              run: 'gcloud info'
           # Build the Docker image
             - name: Build
               run: |
