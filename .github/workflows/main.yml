@@ -15,27 +15,39 @@ jobs:
     setup-build-deploy:
         name: Setup, Build, and Deploy
         runs-on: ubuntu-latest
-
         steps:
-            - name: Checkout
-              uses: actions/checkout@v1
-
-            # Setup gcloud CLI
+            - uses: actions/checkout@v2
+            - run: mvn package -DskipTests
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@v2
+              with:
+                  name: Pharamacy-Data.jar
+                  path: target/
+    build-docker-image:
+        name: build-docker
+        runs-on: ubuntu-latest
+        steps:
+            - name: checkout
+              uses: actions/checkout@v2
+            - name: Retrieve saved jar
+              uses: actions/download-artifact@v2
+              with:
+                  name: Pharamacy-Data.jar
+                  path: target/
             - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
               with:
                   version: '275.0.0'
                   service_account_email: ${{ secrets.SA_EMAIL }}
                   service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS}}
-
-            # Configure gcloud CLI
+                          
+                          # Configure gcloud CLI
             - name: gcloud Set up
               run: |
-                  gcloud config set project $PROJECT_ID
-            # Build and push image to Google Container Registry
-            - name: Build
-              run: |
-                  gcloud builds submit -t gcr.io/$PROJECT_ID/$SERVICE_NAME:latest
-            # Deploy image to Cloud Run
-            - name: Deploy
-              run: |
-                  gcloud dataflow flex-template build gs://pharamacy-deda/template/run_template_new.json --image gcr.io/$PROJECT_ID/$SERVICE_NAME:latest --sdk-language JAVA
+                gcloud config set project $PROJECT_ID
+            - name: Build and push
+              uses: docker/build-push-action@v4
+              with:
+                context: .
+                push: true
+                tags: gcr.io/$PROJECT_ID/$SERVICE_NAME:latest
+
