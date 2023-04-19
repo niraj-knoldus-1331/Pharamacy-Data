@@ -1,0 +1,10 @@
+--parameters:
+  gcpProject: pharmacydeda
+  tempLocation: gs://pharmacydeda/temp
+  stagingLocation: gs://pharmacydeda/staging
+--template-file-gcs-location: gs://pharmacydeda/artifacts/pharmacy-deda.json
+--worker-region: us-east4
+--worker-machine-type: e2-medium
+--region: us-east4
+--service-account-email: dataflow-run@pharmacydeda.iam.gserviceaccount.com
+--num-workers: 1
