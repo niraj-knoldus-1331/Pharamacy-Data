@@ -35,7 +35,7 @@ jobs:
               with:
                   name: Pharamacy-Data.jar
                   path: target/
-            - uses: GoogleCloudPlatform/github-actions/setup-gcloud@develop
+            - uses: GoogleCloudPlatform/github-actions/setup-gcloud@main
               with:
                   version: '275.0.0'
                   service_account_email: ${{ secrets.SA_EMAIL }}
