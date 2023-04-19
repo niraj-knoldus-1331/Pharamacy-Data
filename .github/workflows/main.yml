@@ -45,6 +45,8 @@ jobs:
             - name: gcloud Set up
               run: |
                 gcloud config set project $PROJECT_ID
+            - name: checkout
+              uses: actions/checkout@v2
             - name: Build and push
               uses: docker/build-push-action@v4
               with:
