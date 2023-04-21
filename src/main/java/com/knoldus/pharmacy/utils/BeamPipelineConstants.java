@@ -16,9 +16,12 @@ public class BeamPipelineConstants {
     public static final String COLUMN_MODE_NULLABLE = "NULLABLE";
 
     public static final String VALID_RECORDS_INSERTION_TF = "Valid Records Insertion";
+    public static final String CONTAIN_PII = "contains_pii";
 
     public static final String INVALID_RECORDS_INSERTION_TF = "Invalid Records Insertion";
 
     public static final String FAILED_RECORDS_INSERTION_TF = "Failed Records Insertion";
+
+    public static final String LINKED_RESOURCE_FORMAT = "//bigquery.googleapis.com/projects/%s/datasets/%s/tables/%s";
 
 }

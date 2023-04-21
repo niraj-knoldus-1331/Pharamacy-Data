@@ -18,7 +18,6 @@ import java.util.Optional;
 
 public class KmsService {
     static final Logger logger = LoggerFactory.getLogger(KmsService.class);
-    static final String KEY_ENCRYPTING_KEY_URI = "gcp-kms://projects/de-da-ml/locations/global/keyRings/PharmacyDeDa-KeyRing/cryptoKeys/PharmacyDeDa-Key-Enc";
 
     public static String getSecret(String secretID) throws IOException {
         try (SecretManagerServiceClient client = SecretManagerServiceClient.create()) {
@@ -27,17 +26,17 @@ public class KmsService {
         }
     }
 
-    public static String decryptKeys(String keys) throws GeneralSecurityException {
+    public static String decryptKeys(String keys, String keyUri) throws GeneralSecurityException {
         AeadConfig.register();
         try {
-            GcpKmsClient.register(Optional.of(KEY_ENCRYPTING_KEY_URI), Optional.empty());
+            GcpKmsClient.register(Optional.of(keyUri), Optional.empty());
         } catch (GeneralSecurityException ex) {
             logger.error("Error initializing GCP client");
 
         }
         Aead aead = null;
         try {
-            KeysetHandle handle = KeysetHandle.generateNew(KmsEnvelopeAeadKeyManager.createKeyTemplate(KEY_ENCRYPTING_KEY_URI, KeyTemplates.get("AES256_GCM")));
+            KeysetHandle handle = KeysetHandle.generateNew(KmsEnvelopeAeadKeyManager.createKeyTemplate(keyUri, KeyTemplates.get("AES256_GCM")));
             aead = handle.getPrimitive(Aead.class);
         } catch (GeneralSecurityException ex) {
             logger.error("Error initializing GCP client");

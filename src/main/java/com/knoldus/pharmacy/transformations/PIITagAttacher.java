@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
+import static com.knoldus.pharmacy.utils.BeamPipelineConstants.CONTAIN_PII;
+import static com.knoldus.pharmacy.utils.BeamPipelineConstants.LINKED_RESOURCE_FORMAT;
 import static com.knoldus.pharmacy.utils.Utility.getPIIColumns;
 
 public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRow, TableRowSpecs>> {
@@ -28,7 +30,6 @@ public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRo
         String version = (String) tableRow.get("version");
         List<String> piiColumns = getPIIColumns(bigQueryOptions.getGcsClient(), bigQueryOptions.getSchemaBucket(), formName, version);
         if (piiColumns.size()!=0) {
-            System.out.println("<----------------------------: PII columns :-----------------------------------------> " + piiColumns);
             TagTemplateName tagTemplateName = TagTemplateName.of(bigQueryOptions.getGcpProject(), bigQueryOptions.getLocation(), bigQueryOptions.getTagTemplate());
             attachTagTemplate(tagTemplateName, piiColumns, bigQueryOptions.getGcpProject(), tableRowSpecs.getDataset(), bigQueryOptions.getTagTemplate().toUpperCase(), tableRowSpecs.getBqTableName());
         }
@@ -56,7 +57,7 @@ public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRo
 
 
             String linkedResource =
-                    String.format("//bigquery.googleapis.com/projects/%s/datasets/%s/tables/%s", projectId, datasetId, tableName);
+                    String.format(LINKED_RESOURCE_FORMAT, projectId, datasetId, tableName);
 
 
             LookupEntryRequest lookupEntryRequest = LookupEntryRequest.newBuilder().setLinkedResource(linkedResource).build();
@@ -85,7 +86,7 @@ public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRo
                 }
                 Tag tag = Tag.newBuilder()
                         .setTemplate(tagTemplate.getName())
-                        .putFields("contains_pii", hasPiiValue)
+                        .putFields(CONTAIN_PII, hasPiiValue)
                         .setColumn(columnName)
                         .build();
                 logger.info("Attached PII marker to column {}", columnName);
@@ -124,7 +125,7 @@ public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRo
         var tagTemplate =
                 TagTemplate.newBuilder()
                         .setDisplayName(displayName)
-                        .putFields("contains_pii", hasPiiField)
+                        .putFields(CONTAIN_PII, hasPiiField)
                         .build();
 
         var createTagTemplateRequest =
