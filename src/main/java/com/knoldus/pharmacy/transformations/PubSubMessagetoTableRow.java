@@ -53,7 +53,7 @@ public class PubSubMessagetoTableRow extends PTransform<PCollection<String>, PCo
                 HybridDecrypt hybridDecrypt = bigQueryOptions.getDefaultHybridDecrypt();
                 String base64EncryptedMessage = processContext.element();
                 String encryptedPrivateSecret = KmsService.getSecret(bigQueryOptions.getEncryptedPrivateKeySecret());
-                String privateSecret = KmsService.decryptKeys(encryptedPrivateSecret);
+                String privateSecret = KmsService.decryptKeys(encryptedPrivateSecret, bigQueryOptions.getKeyUri());
                 KeysetHandle privateHandle = CleartextKeysetHandle.read(JsonKeysetReader.withString(privateSecret));
                 
                 String message = new String(KmsService.hybridDecryption(hybridDecrypt, base64EncryptedMessage, privateHandle), StandardCharsets.UTF_8);

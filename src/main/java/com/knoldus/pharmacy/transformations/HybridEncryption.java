@@ -31,7 +31,7 @@ public class HybridEncryption extends PTransform<PCollection<PubsubMessage>, PCo
                 BigQueryOptions bigQueryOptions = options.as(BigQueryOptions.class);
                 HybridEncrypt hybridEncrypt = bigQueryOptions.getDefaultHybridEncrypt();
                 String encryptedPublicSecret = KmsService.getSecret(bigQueryOptions.getEncryptedPublicKeySecret());
-                String publicSecret = KmsService.decryptKeys(encryptedPublicSecret);
+                String publicSecret = KmsService.decryptKeys(encryptedPublicSecret, bigQueryOptions.getKeyUri());
                 KeysetHandle publicHandle = CleartextKeysetHandle.read(JsonKeysetReader.withString(publicSecret));
 
                 PubsubMessage pubsubMessage = processContext.element();

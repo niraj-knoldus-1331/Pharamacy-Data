@@ -13,7 +13,7 @@ public class SendtoGCS extends DoFn<String, Void> {
     public void process(ProcessContext processContext, PipelineOptions options) {
         String element = processContext.element();
         BigQueryOptions bigQueryOptions = options.as(BigQueryOptions.class);
-        Storage storage = StorageOptions.getDefaultInstance().getService();
+        Storage storage = bigQueryOptions.getGcsClient();
         BlobId blobId = BlobId.of(bigQueryOptions.getGcsBucketName(), bigQueryOptions.getGcsFileName());
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("text/plain").build();
         Blob blob = storage.create(blobInfo, element.getBytes(UTF_8));

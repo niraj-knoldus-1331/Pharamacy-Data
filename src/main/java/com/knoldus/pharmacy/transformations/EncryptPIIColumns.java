@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
+import static com.knoldus.pharmacy.utils.BeamPipelineConstants.LINKED_RESOURCE_FORMAT;
 import static com.knoldus.pharmacy.utils.Utility.getPIIColumns;
 
 public class EncryptPIIColumns extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRow, TableRowSpecs>> {
@@ -42,7 +43,7 @@ public class EncryptPIIColumns extends DoFn<KV<TableRow, TableRowSpecs>, KV<Tabl
         BigQueryOptions bigQueryOptions = options.as(BigQueryOptions.class);
         HybridEncrypt hybridEncrypt = bigQueryOptions.getDefaultHybridEncrypt();
         String encryptedPublicSecret = KmsService.getSecret(bigQueryOptions.getEncryptedPublicKeySecret());
-        String publicSecret = KmsService.decryptKeys(encryptedPublicSecret);
+        String publicSecret = KmsService.decryptKeys(encryptedPublicSecret, bigQueryOptions.getKeyUri());
         KeysetHandle publicHandle = CleartextKeysetHandle.read(JsonKeysetReader.withString(publicSecret));
         KV<TableRow, TableRowSpecs> element = context.element();
         List<String> piiColumns;
@@ -81,7 +82,7 @@ public class EncryptPIIColumns extends DoFn<KV<TableRow, TableRowSpecs>, KV<Tabl
     public List<String> lookupEntry(String projectId, String datasetId, String tableName) {
         List<String> piiColumns = new ArrayList<>();
         String linkedResource =
-                String.format("//bigquery.googleapis.com/projects/%s/datasets/%s/tables/%s", projectId, datasetId, tableName);
+                String.format(LINKED_RESOURCE_FORMAT, projectId, datasetId, tableName);
         LookupEntryRequest request =
                 LookupEntryRequest.newBuilder().setLinkedResource(linkedResource).build();
         try (DataCatalogClient dataCatalogClient = DataCatalogClient.create()) {

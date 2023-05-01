@@ -90,6 +90,12 @@ public interface BigQueryOptions extends PubSubOptions {
 
     void setGcsFileName(String gcsFileName);
 
+    @Description("Key Encrypting Key Uri")
+    @Default.String("gcp-kms://projects/de-da-ml/locations/global/keyRings/PharmacyDeDa-KeyRing/cryptoKeys/PharmacyDeDa-Key-Enc")
+    String getKeyUri();
+
+    void setKeyUri(String keyUri);
+
     @Description("Encrypted Public Key Secret")
     @Default.String("projects/880876928180/secrets/encrypted_public_key/versions/1")
     String getEncryptedPublicKeySecret();
