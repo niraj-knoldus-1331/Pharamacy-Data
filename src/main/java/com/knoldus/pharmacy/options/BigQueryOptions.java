@@ -15,7 +15,7 @@ import org.apache.beam.sdk.options.Validation;
 public interface BigQueryOptions extends PubSubOptions {
     @Description("GCP project to access")
     @Validation.Required
-    @Default.String("de-da-ml")
+    @Default.String("de-da-poc")
     String getGcpProject();
 
     void setGcpProject(String gcpProject);
@@ -73,13 +73,13 @@ public interface BigQueryOptions extends PubSubOptions {
     void setBigQueryClient(BigQuery bigQueryClient);
 
     @Description("Encrypted Private Key Secret")
-    @Default.String("projects/880876928180/secrets/encrypted_private_key/versions/1")
+    @Default.String("projects/605540203469/secrets/encrypted_private_key/versions/1")
     String getEncryptedPrivateKeySecret();
 
     void setEncryptedPrivateKeySecret(String encryptedPrivateKeySecret);
 
     @Description("GCS Bucket Name")
-    @Default.String("pharamacy-deda")
+    @Default.String("pharamacy-deda-poc")
     String getGcsBucketName();
 
     void setGcsBucketName(String gcsBucketName);
@@ -91,13 +91,13 @@ public interface BigQueryOptions extends PubSubOptions {
     void setGcsFileName(String gcsFileName);
 
     @Description("Key Encrypting Key Uri")
-    @Default.String("gcp-kms://projects/de-da-ml/locations/global/keyRings/PharmacyDeDa-KeyRing/cryptoKeys/PharmacyDeDa-Key-Enc")
+    @Default.String("gcp-kms://projects/de-da-poc/locations/global/keyRings/DE-DA-POC-Key-Ring/cryptoKeys/PharmacyDeDa-Key-Enc")
     String getKeyUri();
 
     void setKeyUri(String keyUri);
 
     @Description("Encrypted Public Key Secret")
-    @Default.String("projects/880876928180/secrets/encrypted_public_key/versions/1")
+    @Default.String("projects/605540203469/secrets/encrypted_public_key/versions/1")
     String getEncryptedPublicKeySecret();
 
     void setEncryptedPublicKeySecret(String encryptedPublicKeySecret);
@@ -110,7 +110,7 @@ public interface BigQueryOptions extends PubSubOptions {
     void setGcsClient(Storage gcsClient);
 
     @Description("Schema Bucket")
-    @Default.String("pharamacy-deda")
+    @Default.String("pharamacy-deda-poc")
     String getSchemaBucket();
 
     void setSchemaBucket(String schemaBucket);
