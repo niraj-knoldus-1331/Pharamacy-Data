@@ -10,14 +10,14 @@ public interface PubSubOptions extends PipelineOptions {
 
     @Description("The Cloud Pub/Sub topic to read from.")
     @Validation.Required
-    @Default.String("projects/de-da-ml/topics/pharmacy-medication-form-data")
+    @Default.String("projects/de-da-poc/topics/pharmacy-medication-form-data")
     String getInputTopic();
 
     void setInputTopic(String value);
 
     @Description("The cloud Pub/Sub subscription to read from")
     @Validation.Required
-    @Default.String("projects/de-da-ml/subscriptions/pharmacy-medication-form-data_beam_-5688491694422031163")
+    @Default.String("projects/de-da-poc/subscriptions/pharmacy-medication-form-data-sub")
     String getInputSubscription();
 
     void setInputSubscription(String inputSubscription);

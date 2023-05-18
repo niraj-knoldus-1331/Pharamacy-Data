@@ -18,10 +18,10 @@ import java.util.Optional;
 
 public class GenerateAsymmetricKeys {
     final static Logger logger = LoggerFactory.getLogger(GenerateAsymmetricKeys.class);
-    final static String PROJECT_ID = "de-da-ml";
+    final static String PROJECT_ID = "de-da-poc";
     final static String ENCRYPTED_PRIVATE_SECRET_KEY = "encrypted_private_key";
     final static String ENCRYPTED_PUBLIC_SECRET_KEY = "encrypted_public_key";
-    final static String KEK_URI = "gcp-kms://projects/de-da-ml/locations/global/keyRings/PharmacyDeDa-KeyRing/cryptoKeys/PharmacyDeDa-Key-Enc";
+    final static String KEK_URI = "gcp-kms://projects/de-da-poc/locations/global/keyRings/DE-DA-POC-Key-Ring/cryptoKeys/PharmacyDeDa-Key-Enc";
 
     public static void main(String[] args) throws Exception {
         HybridConfig.register();
