@@ -51,7 +51,7 @@ jobs:
 
       - name: 'Use gcloud CLI'
         run: |
-          gcloud auth configure-docker
+          gcloud auth configure-docker us-docker.pkg.dev
       # Build the Docker image
       - name: Build
         run: |
@@ -63,7 +63,7 @@ jobs:
           docker push us-docker.pkg.dev/$PROJECT_ID/docker-images/pharamacy-deda-github:latest
             # Push the Docker image to Google Container Registry
       - name: Build Flex Template
-        run: |
+        run: | 
           gcloud dataflow flex-template build gs://pharamacy-deda-poc/templates/run_template_github.json --image us-docker.pkg.dev/$PROJECT_ID/docker-images/pharamacy-deda-github:latest --sdk-language JAVA
       - name: Run Flex Template
         run: |
