@@ -60,7 +60,7 @@ jobs:
       # Push the Docker image to Google Container Registry
             - name: Publish
               run: |
-                docker push us-east4-docker.pkg.dev/$PROJECT_ID/docker-images/pharamacy-deda-github:latest
+                docker push us-east1-docker.pkg.dev/$PROJECT_ID/docker-images/pharamacy-deda-github:latest
                   # Push the Docker image to Google Container Registry
             - name: Build Flex Template
               run: |
