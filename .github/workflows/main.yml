@@ -8,8 +8,14 @@ on:
 # Environment variables available to all jobs and steps in this workflow
 env:
     PROJECT_ID: ${{ secrets.PROJECT_ID }}
-    RUN_REGION: us-east4
-    SERVICE_NAME: pharamacy-deda-github
+    RUN_REGION: us-east1
+    SERVICE_NAME: "medication-form-job-$(date +%Y%m%d-%H%M%S)"
+    WORKER_REGION: us-east1
+    WORKER_MACHINE_TYPE: e2-medium
+    NUM_WORKERS:  1
+    TEMP_LOCATION: gs://pharamacy-deda/staging_location
+    STAGING_LOCATION: gs://pharamacy-deda/temp_location
+
 
 jobs:
     setup-build-deploy:
@@ -49,26 +55,26 @@ jobs:
           # Build the Docker image
             - name: Build
               run: |
-                docker build -t gcr.io/$PROJECT_ID/pharamacy-deda-github:latest -f Dockerfile .
+                docker build -t us-east1-docker.pkg.dev/$PROJECT_ID/docker-images/pharamacy-deda-github:latest -f Dockerfile .
 
       # Push the Docker image to Google Container Registry
             - name: Publish
               run: |
-                docker push gcr.io/$PROJECT_ID/pharamacy-deda-github:latest
+                docker push us-east4-docker.pkg.dev/$PROJECT_ID/docker-images/pharamacy-deda-github:latest
                   # Push the Docker image to Google Container Registry
             - name: Build Flex Template
               run: |
-                gcloud dataflow flex-template build gs://pharamacy-deda/template/run_template_new.json --image gcr.io/$PROJECT_ID/pharamacy-deda-github:latest --sdk-language JAVA
+                gcloud dataflow flex-template build gs://pharamacy-deda-poc/templates/run_template_github.json --image us-east1-docker.pkg.dev/de-da-poc/docker-images/pharamacy-deda-github:latest --sdk-language JAVA
             - name: Run Flex Template
               run: |
-                gcloud dataflow flex-template run "testjob-$(date +%Y%m%d-%H%M%S)" \
-                  --template-file-gcs-location=gs://pharamacy-deda/template/run_template_new.json \
-                  --worker-region=us-east4 \
-                  --worker-machine-type=e2-medium \
-                  --region=us-east4 \
-                  --service-account-email=dataflow-run@de-da-ml.iam.gserviceaccount.com \
-                  --num-workers=1 \
-                  --parameters gcpProject=de-da-ml \
-                  --parameters tempLocation=gs://pharamacy-deda/staging_location \
-                  --parameters stagingLocation=gs://pharamacy-deda/temp_location
+                gcloud dataflow flex-template run $SERVICE_NAME \
+                  --template-file-gcs-location=gs://pharamacy-deda-poc/templates/run_template_github.json \
+                  --worker-region=$WORKER_REGION \
+                  --worker-machine-type=$WORKER_MACHINE_TYPE \
+                  --region=$RUN_REGION \
+                  --service-account-email=${{ secrets.SA_EMAIL }} \
+                  --num-workers=$NUM_WORKERS \
+                  --parameters gcpProject=$PROJECT_ID \
+                  --parameters tempLocation=$TEMP_LOCATION \
+                  --parameters stagingLocation=$STAGING_LOCATION
 
