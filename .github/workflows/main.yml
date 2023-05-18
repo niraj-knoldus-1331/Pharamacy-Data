@@ -9,7 +9,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
   RUN_REGION: us-east1
-  SERVICE_NAME: "medication-form-job-$(date +%Y%m%d-%H%M%S)"
+  SERVICE_NAME: "pharmacy-job"
   WORKER_REGION: us-east1
   WORKER_MACHINE_TYPE: e2-medium
   NUM_WORKERS:  1
@@ -67,7 +67,7 @@ jobs:
           gcloud dataflow flex-template build gs://pharamacy-deda-poc/templates/run_template_github.json --image us-docker.pkg.dev/$PROJECT_ID/docker-images/pharamacy-deda-github:latest --sdk-language JAVA
       - name: Run Flex Template
         run: |
-          gcloud dataflow flex-template run $SERVICE_NAME \
+          gcloud dataflow flex-template run "pharmacy-job-$(date +%Y-%m-%d)" \
             --template-file-gcs-location=gs://pharamacy-deda-poc/templates/run_template_github.json \
             --worker-region=$WORKER_REGION \
             --worker-machine-type=$WORKER_MACHINE_TYPE \
