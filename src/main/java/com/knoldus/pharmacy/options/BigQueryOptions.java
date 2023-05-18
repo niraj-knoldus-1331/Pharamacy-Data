@@ -22,7 +22,7 @@ public interface BigQueryOptions extends PubSubOptions {
 
     @Description("Location of the data catalog")
     @Validation.Required
-    @Default.String("us-east4")
+    @Default.String("us-east1")
     String getLocation();
 
     void setLocation(String location);
