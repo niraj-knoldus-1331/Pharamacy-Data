@@ -13,8 +13,8 @@ env:
   WORKER_REGION: us-east1
   WORKER_MACHINE_TYPE: e2-medium
   NUM_WORKERS:  1
-  TEMP_LOCATION: gs://pharamacy-deda/staging_location
-  STAGING_LOCATION: gs://pharamacy-deda/temp_location
+  TEMP_LOCATION: gs://pharamacy-deda-poc/staging_location
+  STAGING_LOCATION: gs://pharamacy-deda-poc/temp_location
 
 
 jobs:
