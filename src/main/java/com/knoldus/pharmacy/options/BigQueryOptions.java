@@ -59,12 +59,17 @@ public interface BigQueryOptions extends PubSubOptions {
 
     void setDeadLetterQueue(String deadLetterQueue);
 
-    @Description("BigQuery Dead Letter Queue dataset")
+    @Description("BigQuery Dead Letter Queue Table Name")
     @Default.String("dlq_event")
     String getDeadLetterQueueTableName();
 
     void setDeadLetterQueueTableName(String deadLetterQueueTableName);
 
+    @Description("BigQuery Dead Letter Queue Table Name")
+    @Default.String("dlq_event_retry")
+    String getRetryDeadLetterQueue();
+
+    void setRetryDeadLetterQueue(String retryDeadLetterQueue);
     @JsonIgnore
     @Description("Bigquery Client")
     @Default.InstanceFactory(BigQueryClientFactory.class)
@@ -132,4 +137,6 @@ public interface BigQueryOptions extends PubSubOptions {
     HybridDecrypt getDefaultHybridDecrypt();
 
     void setDefaultHybridDecrypt(HybridDecrypt defaultHybridDecrypt);
+
+
 }

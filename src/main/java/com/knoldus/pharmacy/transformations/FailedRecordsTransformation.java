@@ -1,6 +1,5 @@
 package com.knoldus.pharmacy.transformations;
 
-import com.google.api.services.bigquery.model.TableDataInsertAllResponse;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
 import com.knoldus.pharmacy.models.TableRowSpecs;
@@ -8,14 +7,12 @@ import com.knoldus.pharmacy.options.BigQueryOptions;
 import com.knoldus.pharmacy.services.BigQueryService;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryInsertError;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +28,7 @@ import static com.knoldus.pharmacy.utils.BeamPipelineConstants.INSERTION_TIME_ST
 public class FailedRecordsTransformation extends PTransform<PCollection<BigQueryInsertError>, PCollection<KV<TableRow, TableRowSpecs>>> {
 
     final static Logger logger = LoggerFactory.getLogger(BigQueryService.class);
+
     @Override
     public PCollection<KV<TableRow, TableRowSpecs>> expand(PCollection<BigQueryInsertError> input) {
         return input.apply(ParDo.of(new DoFn<BigQueryInsertError, KV<TableRow, TableRowSpecs>>() {
@@ -63,7 +61,7 @@ public class FailedRecordsTransformation extends PTransform<PCollection<BigQuery
                 invalidRow.set(EXCEPTION_MESSAGE_COLUMN, errorMessage);
                 invalidRow.set(GUID_COLUMN, uuid.toString());
                 invalidRow.set(INSERTION_TIME_STAMP, Instant.now().toString());
-                TableRowSpecs specs = new TableRowSpecs(deadLetterQueueTable, dead_letter_schema, deadLetterQueue);
+                TableRowSpecs specs = new TableRowSpecs(deadLetterQueueTable, dead_letter_schema, deadLetterQueue, tableRow.toPrettyString());
                 processContext.output(KV.of(invalidRow, specs));
             }
         }));

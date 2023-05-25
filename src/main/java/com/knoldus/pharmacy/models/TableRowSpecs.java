@@ -1,10 +1,13 @@
 package com.knoldus.pharmacy.models;
 
 import java.io.Serializable;
+
 import org.apache.beam.sdk.coders.AvroCoder;
 import org.apache.beam.sdk.coders.DefaultCoder;
 
-/** [[TableRowSpecs]] is a class, representing specifications of a BigQuery Table. */
+/**
+ * [[TableRowSpecs]] is a class, representing specifications of a BigQuery Table.
+ */
 @DefaultCoder(AvroCoder.class)
 public class TableRowSpecs implements Serializable {
 
@@ -12,14 +15,21 @@ public class TableRowSpecs implements Serializable {
     private String bqTableName;
     private String bqSchema;
 
+    private String message;
+
     public TableRowSpecs() {
     }
 
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
     public TableRowSpecs(
-            String bqTableName, String bqSchema, String dataset) {
+            String bqTableName, String bqSchema, String dataset, String message) {
         this.bqTableName = bqTableName;
         this.bqSchema = bqSchema;
         this.dataset = dataset;
+        this.message = message;
     }
 
     public String getBqTableName() {
@@ -56,5 +66,8 @@ public class TableRowSpecs implements Serializable {
     }
 
 
+    public String getMessage() {
+        return message;
+    }
 }
 

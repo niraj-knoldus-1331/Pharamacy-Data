@@ -4,6 +4,7 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.datacatalog.v1.*;
 import com.knoldus.pharmacy.models.TableRowSpecs;
 import com.knoldus.pharmacy.options.BigQueryOptions;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
@@ -13,8 +14,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
+import static com.knoldus.pharmacy.Application.invalidRecords;
+import static com.knoldus.pharmacy.schema.BQJsonToBQSchema.deadLetterQueueBQSchema;
 import static com.knoldus.pharmacy.utils.BeamPipelineConstants.CONTAIN_PII;
 import static com.knoldus.pharmacy.utils.BeamPipelineConstants.LINKED_RESOURCE_FORMAT;
+import static com.knoldus.pharmacy.utils.Utility.extractDeadLetterEvent;
 import static com.knoldus.pharmacy.utils.Utility.getPIIColumns;
 
 public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRow, TableRowSpecs>> {
@@ -26,14 +30,35 @@ public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRo
         KV<TableRow, TableRowSpecs> element = processContext.element();
         TableRowSpecs tableRowSpecs = element.getValue();
         TableRow tableRow = element.getKey();
-        String formName = (String) tableRow.get("formName");
-        String version = (String) tableRow.get("version");
-        List<String> piiColumns = getPIIColumns(bigQueryOptions.getGcsClient(), bigQueryOptions.getSchemaBucket(), formName, version);
-        if (piiColumns.size()!=0) {
-            TagTemplateName tagTemplateName = TagTemplateName.of(bigQueryOptions.getGcpProject(), bigQueryOptions.getLocation(), bigQueryOptions.getTagTemplate());
-            attachTagTemplate(tagTemplateName, piiColumns, bigQueryOptions.getGcpProject(), tableRowSpecs.getDataset(), bigQueryOptions.getTagTemplate().toUpperCase(), tableRowSpecs.getBqTableName());
+        String message = tableRowSpecs.getMessage();
+        String retryDeadLetterQueue = bigQueryOptions.getRetryDeadLetterQueue();
+        String deadLetterQueue = bigQueryOptions.getDeadLetterQueue();
+        UUID uuid = UUID.randomUUID();
+        try {
+            String formName = (String) tableRow.get("formName");
+            String version = (String) tableRow.get("version");
+            List<String> piiColumns = getPIIColumns(bigQueryOptions.getGcsClient(), bigQueryOptions.getSchemaBucket(), formName, version);
+            if (piiColumns.size() != 0) {
+                TagTemplateName tagTemplateName = TagTemplateName.of(bigQueryOptions.getGcpProject(), bigQueryOptions.getLocation(), bigQueryOptions.getTagTemplate());
+
+                attachTagTemplate(tagTemplateName, piiColumns, bigQueryOptions.getGcpProject(), tableRowSpecs.getDataset(), bigQueryOptions.getTagTemplate().toUpperCase(), tableRowSpecs.getBqTableName());
+            }
+            processContext.output(KV.of(tableRow, tableRowSpecs));
+        } catch (
+                IOException ex) {
+            logger.error(String.format("IOException Occurred {%s}", ex));
+            TableRow invalidRow = extractDeadLetterEvent(message, uuid, ex);
+            String dead_letter_schema = BigQueryHelpers.toJsonString(deadLetterQueueBQSchema());
+            TableRowSpecs specs = new TableRowSpecs(retryDeadLetterQueue, dead_letter_schema, deadLetterQueue, message);
+            processContext.output(invalidRecords, KV.of(invalidRow, specs));
+        } catch (
+                Exception ex) {
+            logger.error(String.format("Exception Occurred {%s}", ex));
+            TableRow invalidRow = extractDeadLetterEvent(message, uuid, ex);
+            String dead_letter_schema = BigQueryHelpers.toJsonString(deadLetterQueueBQSchema());
+            TableRowSpecs specs = new TableRowSpecs(retryDeadLetterQueue, dead_letter_schema, deadLetterQueue, message);
+            processContext.output(invalidRecords, KV.of(invalidRow, specs));
         }
-        processContext.output(KV.of(tableRow, tableRowSpecs));
     }
 
 
@@ -43,60 +68,55 @@ public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRo
             final String projectId,
             final String datasetId,
             final String displayName,
-            final String tableName) {
+            final String tableName) throws IOException {
 
 
-        try (DataCatalogClient dataCatalogClient = DataCatalogClient.create()) {
-            GetTagTemplateRequest request =
-                    GetTagTemplateRequest.newBuilder().setName(tagTemplateName.toString()).build();
+        DataCatalogClient dataCatalogClient = DataCatalogClient.create();
+        GetTagTemplateRequest request =
+                GetTagTemplateRequest.newBuilder().setName(tagTemplateName.toString()).build();
 
-            TagTemplate tagTemplate = getTagTemplate(dataCatalogClient, request);
-            if (tagTemplate == null) {
-                tagTemplate = createTag(dataCatalogClient, tagTemplateName, "Contains PII");
+        TagTemplate tagTemplate = getTagTemplate(dataCatalogClient, request);
+        if (tagTemplate == null) {
+            tagTemplate = createTag(dataCatalogClient, tagTemplateName);
+        }
+
+
+        String linkedResource =
+                String.format(LINKED_RESOURCE_FORMAT, projectId, datasetId, tableName);
+
+
+        LookupEntryRequest lookupEntryRequest = LookupEntryRequest.newBuilder().setLinkedResource(linkedResource).build();
+
+        Entry tableEntry = dataCatalogClient.lookupEntry(lookupEntryRequest);
+        DataCatalogClient.ListTagsPagedResponse tagsResponse =
+                dataCatalogClient.listTags(tableEntry.getName());
+
+        HashSet<String> columnNameSet = new HashSet<>();
+
+        for (var tag : tagsResponse.iterateAll()) {
+            if (tag.getTemplateDisplayName().equals(displayName)) {
+                columnNameSet.add(tag.getColumn().toLowerCase());
             }
+        }
 
+        // -------------------------------
+        // Attach a Tag to the table.
+        // -------------------------------
+        TagField hasPiiValue = TagField.newBuilder().setBoolValue(true).build();
 
-            String linkedResource =
-                    String.format(LINKED_RESOURCE_FORMAT, projectId, datasetId, tableName);
-
-
-            LookupEntryRequest lookupEntryRequest = LookupEntryRequest.newBuilder().setLinkedResource(linkedResource).build();
-
-            Entry tableEntry = dataCatalogClient.lookupEntry(lookupEntryRequest);
-            DataCatalogClient.ListTagsPagedResponse tagsResponse =
-                    dataCatalogClient.listTags(tableEntry.getName());
-
-            HashSet<String> columnNameSet = new HashSet<>();
-
-            for (var tag : tagsResponse.iterateAll()) {
-                if (tag.getTemplateDisplayName().equals(displayName)) {
-                    columnNameSet.add(tag.getColumn().toLowerCase());
-                }
+        for (String columnName : columns) {
+            if (columnNameSet.contains(columnName.toLowerCase())) {
+                logger.info("Column {} already marked as PII", columnName);
+                continue;
             }
+            Tag tag = Tag.newBuilder()
+                    .setTemplate(tagTemplate.getName())
+                    .putFields(CONTAIN_PII, hasPiiValue)
+                    .setColumn(columnName)
+                    .build();
+            logger.info("Attached PII marker to column {}", columnName);
 
-            // -------------------------------
-            // Attach a Tag to the table.
-            // -------------------------------
-            TagField hasPiiValue = TagField.newBuilder().setBoolValue(true).build();
-
-            for (String columnName : columns) {
-                if (columnNameSet.contains(columnName.toLowerCase())) {
-                    logger.info("Column {} already marked as PII", columnName);
-                    continue;
-                }
-                Tag tag = Tag.newBuilder()
-                        .setTemplate(tagTemplate.getName())
-                        .putFields(CONTAIN_PII, hasPiiValue)
-                        .setColumn(columnName)
-                        .build();
-                logger.info("Attached PII marker to column {}", columnName);
-
-                dataCatalogClient.createTag(tableEntry.getName(), tag);
-            }
-        } catch (IOException ioException) {
-            logger.error("IO Exception Occurred", ioException);
-        } catch (Exception exception) {
-            logger.error("Unexpected Exception Occurred", exception);
+            dataCatalogClient.createTag(tableEntry.getName(), tag);
         }
     }
 
@@ -111,20 +131,20 @@ public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRo
         return null;
     }
 
-    private static TagTemplate createTag(
+    private TagTemplate createTag(
             final DataCatalogClient dataCatalogClient,
-            final TagTemplateName template,
-            final String displayName) {
+            final TagTemplateName template) {
+        logger.info("Creating PII tag");
 
         TagTemplateField hasPiiField =
                 TagTemplateField.newBuilder()
-                        .setDisplayName(displayName)
+                        .setDisplayName("Contains PII")
                         .setType(FieldType.newBuilder().setPrimitiveType(FieldType.PrimitiveType.BOOL).build())
                         .build();
 
         var tagTemplate =
                 TagTemplate.newBuilder()
-                        .setDisplayName(displayName)
+                        .setDisplayName("Contains PII")
                         .putFields(CONTAIN_PII, hasPiiField)
                         .build();
 

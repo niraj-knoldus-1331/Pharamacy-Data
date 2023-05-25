@@ -7,14 +7,9 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
-import com.google.crypto.tink.CleartextKeysetHandle;
-import com.google.crypto.tink.HybridDecrypt;
-import com.google.crypto.tink.JsonKeysetReader;
-import com.google.crypto.tink.KeysetHandle;
 import com.knoldus.pharmacy.Application;
 import com.knoldus.pharmacy.models.TableRowSpecs;
 import com.knoldus.pharmacy.options.BigQueryOptions;
-import com.knoldus.pharmacy.services.KmsService;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -27,9 +22,6 @@ import org.apache.beam.sdk.values.TupleTagList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.*;
 
@@ -37,6 +29,7 @@ import static com.knoldus.pharmacy.Application.invalidRecords;
 import static com.knoldus.pharmacy.Application.validRecords;
 import static com.knoldus.pharmacy.schema.BQJsonToBQSchema.deadLetterQueueBQSchema;
 import static com.knoldus.pharmacy.utils.BeamPipelineConstants.*;
+import static com.knoldus.pharmacy.utils.Utility.extractDeadLetterEvent;
 
 
 public class PubSubMessagetoTableRow extends PTransform<PCollection<String>, PCollectionTuple> {
@@ -48,24 +41,17 @@ public class PubSubMessagetoTableRow extends PTransform<PCollection<String>, PCo
         return input.apply("MapToRecord", ParDo.of(new DoFn<String, KV<TableRow, TableRowSpecs>>() {
 
             @ProcessElement
-            public void process(ProcessContext processContext, PipelineOptions options) throws IOException, GeneralSecurityException {
+            public void process(ProcessContext processContext, PipelineOptions options) {
                 BigQueryOptions bigQueryOptions = options.as(BigQueryOptions.class);
-                HybridDecrypt hybridDecrypt = bigQueryOptions.getDefaultHybridDecrypt();
-                String base64EncryptedMessage = processContext.element();
-                String encryptedPrivateSecret = KmsService.getSecret(bigQueryOptions.getEncryptedPrivateKeySecret());
-                String privateSecret = KmsService.decryptKeys(encryptedPrivateSecret, bigQueryOptions.getKeyUri());
-                KeysetHandle privateHandle = CleartextKeysetHandle.read(JsonKeysetReader.withString(privateSecret));
-                
-                String message = new String(KmsService.hybridDecryption(hybridDecrypt, base64EncryptedMessage, privateHandle), StandardCharsets.UTF_8);
-
                 UUID uuid = UUID.randomUUID();
                 String bqDataset = bigQueryOptions.getBqDataset();
                 String deadLetterQueue = bigQueryOptions.getDeadLetterQueue();
-                String deadLetterQueueTable = bigQueryOptions.getDeadLetterQueueTableName();
+                String retryDeadLetterQueue = bigQueryOptions.getRetryDeadLetterQueue();
                 ObjectMapper mapper = bigQueryOptions.getDefaultObjectMapper();
                 TableRow validRow = new TableRow();
                 Map<String, Object> flattenKeyMap = new HashMap<>();
                 Map<String, Object> medicationForm = new HashMap<>();
+                String message = processContext.element();
                 try {
                     Storage gcsClient = bigQueryOptions.getGcsClient();
                     String schemaBucketName = bigQueryOptions.getSchemaBucket();
@@ -91,7 +77,7 @@ public class PubSubMessagetoTableRow extends PTransform<PCollection<String>, PCo
                     String tableName = buildTableName(medicationForm);
                     addAuditFields(uuid, validRow);
                     medicationForm.forEach(validRow::set);
-                    TableRowSpecs specs = new TableRowSpecs(tableName, bqSchema, bqDataset);
+                    TableRowSpecs specs = new TableRowSpecs(tableName, bqSchema, bqDataset, message);
                     logger.info(String.format("Output Json is {%s}", validRow));
                     logger.info("Generating Valid Records");
                     processContext.output(validRecords, KV.of(validRow, specs));
@@ -99,19 +85,9 @@ public class PubSubMessagetoTableRow extends PTransform<PCollection<String>, PCo
                     logger.error(String.format("Exception Occurred {%s}", ex));
                     TableRow invalidRow = extractDeadLetterEvent(message, uuid, ex);
                     String dead_letter_schema = BigQueryHelpers.toJsonString(deadLetterQueueBQSchema());
-                    TableRowSpecs specs = new TableRowSpecs(deadLetterQueueTable, dead_letter_schema, deadLetterQueue);
+                    TableRowSpecs specs = new TableRowSpecs(retryDeadLetterQueue, dead_letter_schema, deadLetterQueue, message);
                     processContext.output(invalidRecords, KV.of(invalidRow, specs));
                 }
-            }
-
-            private TableRow extractDeadLetterEvent(String message, UUID uuid, Exception ex) {
-                logger.info("Extracting Dead Letter Event");
-                TableRow invalidRow = new TableRow();
-                invalidRow.set(MESSAGE_COLUMN, message);
-                invalidRow.set(EXCEPTION_MESSAGE_COLUMN, ex.getMessage());
-                invalidRow.set(GUID_COLUMN, uuid.toString());
-                invalidRow.set(INSERTION_TIME_STAMP, Instant.now().toString());
-                return invalidRow;
             }
 
             private String getBqSchema(Storage gcsClient, String schemaBucketName, Map<String, Object> medicationForm) {
