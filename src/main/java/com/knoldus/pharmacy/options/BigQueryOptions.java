@@ -36,7 +36,7 @@ public interface BigQueryOptions extends PubSubOptions {
 
     @Description("BigQuery Dataset")
     @Validation.Required
-    @Default.String("test_de")
+    @Default.String("medication_forms")
     String getBqDataset();
 
     void setBqDataset(String bqDataset);
