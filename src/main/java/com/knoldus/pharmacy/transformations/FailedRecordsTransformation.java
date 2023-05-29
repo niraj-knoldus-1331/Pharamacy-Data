@@ -27,7 +27,7 @@ import static com.knoldus.pharmacy.utils.BeamPipelineConstants.INSERTION_TIME_ST
 
 public class FailedRecordsTransformation extends PTransform<PCollection<BigQueryInsertError>, PCollection<KV<TableRow, TableRowSpecs>>> {
 
-    final static Logger logger = LoggerFactory.getLogger(BigQueryService.class);
+    final static Logger logger = LoggerFactory.getLogger(FailedRecordsTransformation.class);
 
     @Override
     public PCollection<KV<TableRow, TableRowSpecs>> expand(PCollection<BigQueryInsertError> input) {

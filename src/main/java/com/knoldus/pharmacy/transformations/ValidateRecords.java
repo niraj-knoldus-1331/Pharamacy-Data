@@ -34,7 +34,7 @@ import static com.knoldus.pharmacy.utils.Utility.extractDeadLetterEvent;
 
 
 public class ValidateRecords extends PTransform<PCollection<String>, PCollectionTuple> {
-    final Logger logger = LoggerFactory.getLogger(Application.class);
+    final Logger logger = LoggerFactory.getLogger(ValidateRecords.class);
 
 
     @Override
