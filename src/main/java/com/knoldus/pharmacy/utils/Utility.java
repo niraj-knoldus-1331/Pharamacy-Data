@@ -32,4 +32,5 @@ public class Utility {
         invalidRow.set(INSERTION_TIME_STAMP, Instant.now().toString());
         return invalidRow;
     }
+
 }

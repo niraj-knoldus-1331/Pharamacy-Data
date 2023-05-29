@@ -17,10 +17,6 @@ public class BigQueryPipelineFactory {
                         .as(BigQueryOptions.class);
 
         Preconditions.checkArgumentNotNull(options.getInputTopic());
-//        Preconditions.checkArgumentNotNull(options.getWindowSize());
-
-//        Preconditions.checkArgumentNotNull(options.getGcpProject());
-//        Preconditions.checkArgumentNotNull(options.getBqDataset());
 
         return Pipeline.create(options);
     }

@@ -18,6 +18,7 @@ import com.google.crypto.tink.JsonKeysetReader;
 import com.google.crypto.tink.KeysetHandle;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.knoldus.pharmacy.exceptions.DataCatalogException;
 import com.knoldus.pharmacy.models.TableRowSpecs;
 import com.knoldus.pharmacy.options.BigQueryOptions;
 import com.knoldus.pharmacy.services.KmsService;
@@ -115,14 +116,17 @@ public class EncryptPIIColumns extends DoFn<KV<TableRow, TableRowSpecs>, KV<Tabl
                 String.format(LINKED_RESOURCE_FORMAT, projectId, datasetId, tableName);
         LookupEntryRequest request =
                 LookupEntryRequest.newBuilder().setLinkedResource(linkedResource).build();
-        DataCatalogClient dataCatalogClient = DataCatalogClient.create();
-        Entry entry = dataCatalogClient.lookupEntry(request);
-        DataCatalogClient.ListTagsPagedResponse listTagsPagedResponse = dataCatalogClient.listTags(entry.getName());
-        for (Tag tag : listTagsPagedResponse.iterateAll()) {
-            piiColumns.add(tag.getColumn());
-        }
+        try (DataCatalogClient dataCatalogClient = DataCatalogClient.create()) {
+            Entry entry = dataCatalogClient.lookupEntry(request);
+            DataCatalogClient.ListTagsPagedResponse listTagsPagedResponse = dataCatalogClient.listTags(entry.getName());
+            for (Tag tag : listTagsPagedResponse.iterateAll()) {
+                piiColumns.add(tag.getColumn());
+            }
 
-        return piiColumns;
+            return piiColumns;
+        } catch (Exception ex) {
+            throw new DataCatalogException(ex.getMessage());
+        }
 
     }
 
