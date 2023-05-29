@@ -14,7 +14,7 @@ import java.util.*;
 import static com.knoldus.pharmacy.utils.BeamPipelineConstants.*;
 
 public class Utility {
-    static final Logger logger = LoggerFactory.getLogger(EncryptPIIColumns.class);
+    static final Logger logger = LoggerFactory.getLogger(Utility.class);
     public static List<String> getPIIColumns(Storage gcsClient, String bucketName, String formName, String version) {
         logger.info("Getting PII Columns from Schema Registry");
         formName = formName.toLowerCase().replace(" ", "_");

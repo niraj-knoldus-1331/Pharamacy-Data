@@ -27,7 +27,7 @@ import static com.knoldus.pharmacy.utils.Utility.extractDeadLetterEvent;
 import static com.knoldus.pharmacy.utils.Utility.getPIIColumns;
 
 public class PIITagAttacher extends DoFn<KV<TableRow, TableRowSpecs>, KV<TableRow, TableRowSpecs>> {
-    final Logger logger = LoggerFactory.getLogger(PubSubMessagetoTableRow.class);
+    final Logger logger = LoggerFactory.getLogger(PIITagAttacher.class);
 
     @ProcessElement
     public void process(ProcessContext processContext, PipelineOptions options) {

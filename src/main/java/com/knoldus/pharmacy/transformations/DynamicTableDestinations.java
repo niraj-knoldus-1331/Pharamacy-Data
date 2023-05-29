@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 public class DynamicTableDestinations extends DynamicDestinations<KV<TableRow, TableRowSpecs>, TableRowSpecs> {
-    final static Logger logger = LoggerFactory.getLogger(BigQueryService.class);
+    final static Logger logger = LoggerFactory.getLogger(DynamicTableDestinations.class);
     private final String gcpProject;
 
     public DynamicTableDestinations(String gcpProject) {
